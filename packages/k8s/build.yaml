@@ -1,0 +1,26 @@
+requires:
+- name: "golang"
+  category: "build"
+  version: ">=0"
+env:
+- PATH=$PATH:/usr/local/go/bin
+- GOPATH=/go
+{{- if not .Values.gomodules }}
+- GO111MODULE=off
+{{- end }}
+prelude:
+- |
+   mkdir -p /go/src/github.com/{{ index .Values.labels "github.owner" }} && \
+   git clone https://github.com/{{ index .Values.labels "github.owner" }}/{{.Values.name}}.git /go/src/github.com/{{ index .Values.labels "github.owner" }}/{{.Values.name}} && \ 
+   cd /go/src/github.com/{{ index .Values.labels "github.owner" }}/{{.Values.name}} && \
+{{- if .Values.branch }}
+   git checkout {{.Values.branch}} -b build
+{{- else }}
+   git checkout v{{.Values.version}} -b build
+{{- end }}
+# Build deps required only for k3s
+- |
+   zypper in -y libseccomp-devel
+- cd /go/src/github.com/{{ index .Values.labels "github.owner" }}/{{.Values.name}} && ./scripts/{{.Values.build_script}}
+steps:
+- cd /go/src/github.com/{{ index .Values.labels "github.owner" }}/{{.Values.name}} && cp -rfv bin/* /usr/bin/

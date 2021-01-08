@@ -5,6 +5,19 @@ packages:
   labels:
     github.repo: "k3s"
     github.owner: "rancher"
+
+  build_script: "build"
+  gomodules: false
+- name: "rke2"
+  category: "container"
+  version: "1.19.5+rke2r1"
+  labels:
+    github.repo: "rke2"
+    github.owner: "rancher"
+
+  build_script: "build-binary"
+  gomodules: true
+
 # - name: "k3s-master"
 #   category: "container"
 #   version: "9999"
