@@ -29,7 +29,6 @@ shell() {
 }
 
 parse_cmdline() {
-  set -x
 	read -r cmdline < /proc/cmdline
 
 	for param in $cmdline ; do
@@ -49,7 +48,7 @@ parse_cmdline() {
 	case "$root" in
 		/dev/* ) device=$root ;;
 		UUID=* ) eval $root; device="/dev/disk/by-uuid/$UUID"  ;;
-		LABEL=*) eval $root; device="/dev/disk/by-label/$LABEL" ;;
+		LABEL=*) eval $root; device=$(blkid -t LABEL=$LABEL -o device) ;;
 	esac
 }
 
@@ -59,15 +58,15 @@ shell() {
 
 mount_root() {
 	newroot=$1
-	if [ ! "$device" ]; then
+	dev=$2
+	if [ ! "$dev" ]; then
 		echo "device not specified!"
 		shell
 	fi
-	if ! mount -n ${rootfstype:+-t $rootfstype} -o ${rwopt:-ro}${rootflags:+,$rootflags} "$device" "$newroot" ; then
-		echo "cant mount: $device"
+	if ! mount -n ${rootfstype:+-t $rootfstype} -o ${rwopt:-ro}${rootflags:+,$rootflags} "$dev" "$newroot" ; then
+		echo "cant mount: $dev"
 		shell
 	fi
-
 }
 
 search_overlay() {
@@ -93,68 +92,7 @@ search_overlay() {
     WORK_DIR=""
 
     mount $DEVICE $DEVICE_MNT 2>/dev/null
-    if [ -d $DEVICE_MNT/minimal/rootfs -a -d $DEVICE_MNT/minimal/work ] ; then
-      # folder
-      echo -e "  Found \\e[94m/minimal\\e[0m folder on device \\e[31m$DEVICE\\e[0m."
-      touch $DEVICE_MNT/minimal/rootfs/minimal.pid 2>/dev/null
-      if [ -f $DEVICE_MNT/minimal/rootfs/minimal.pid ] ; then
-        # read/write mode
-        echo -e "  Device \\e[31m$DEVICE\\e[0m is mounted in read/write mode."
-
-        rm -f $DEVICE_MNT/minimal/rootfs/minimal.pid
-
-        OVERLAY_DIR=$DEFAULT_OVERLAY_DIR
-        OVERLAY_MNT=$DEVICE_MNT
-        UPPER_DIR=$DEVICE_MNT/minimal/rootfs
-        WORK_DIR=$DEVICE_MNT/minimal/work
-      else
-        # read only mode
-        echo -e "  Device \\e[31m$DEVICE\\e[0m is mounted in read only mode."
-
-        OVERLAY_DIR=$DEVICE_MNT/minimal/rootfs
-        OVERLAY_MNT=$DEVICE_MNT
-        UPPER_DIR=$DEFAULT_UPPER_DIR
-        WORK_DIR=$DEFAULT_WORK_DIR
-      fi
-    elif [ -f $DEVICE_MNT/minimal.img ] ; then
-      #image
-      echo -e "  Found \\e[94m/minimal.img\\e[0m image on device \\e[31m$DEVICE\\e[0m."
-
-      mkdir -p /tmp/mnt/image
-      IMAGE_MNT=/tmp/mnt/image
-
-      LOOP_DEVICE=$(losetup -f)
-      losetup $LOOP_DEVICE $DEVICE_MNT/minimal.img
-
-      mount $LOOP_DEVICE $IMAGE_MNT
-      if [ -d $IMAGE_MNT/rootfs -a -d $IMAGE_MNT/work ] ; then
-        touch $IMAGE_MNT/rootfs/minimal.pid 2>/dev/null
-        if [ -f $IMAGE_MNT/rootfs/minimal.pid ] ; then
-          # read/write mode
-          echo -e "  Image \\e[94m$DEVICE/minimal.img\\e[0m is mounted in read/write mode."
-
-          rm -f $IMAGE_MNT/rootfs/minimal.pid
-
-          OVERLAY_DIR=$DEFAULT_OVERLAY_DIR
-          OVERLAY_MNT=$IMAGE_MNT
-          UPPER_DIR=$IMAGE_MNT/rootfs
-          WORK_DIR=$IMAGE_MNT/work
-        else
-          # read only mode
-          echo -e "  Image \\e[94m$DEVICE/minimal.img\\e[0m is mounted in read only mode."
-
-          OVERLAY_DIR=$IMAGE_MNT/rootfs
-          OVERLAY_MNT=$IMAGE_MNT
-          UPPER_DIR=$DEFAULT_UPPER_DIR
-          WORK_DIR=$DEFAULT_WORK_DIR
-        fi
-      else
-        umount $IMAGE_MNT
-        rm -rf $IMAGE_MNT
-      fi
-
-
-    elif [ -f $DEVICE_MNT/rootfs.squashfs ] ; then
+    if [ -f $DEVICE_MNT/rootfs.squashfs ] ; then
       #image
       echo -e "  Found \\e[94m/rootfs.squashfs\\e[0m image on device \\e[31m$DEVICE\\e[0m."
 
@@ -230,29 +168,25 @@ mount_system() {
   parse_cmdline
 
   rootdevice=/mnt
+
   if [ -n "$device" ]; then
     # FIXME: Temporarly, until we separate COS_STATE from COS_PERSISTENT (/usr/local)
     rwopt="rw"
-    mount_root $rootdevice
+    mount_root $rootdevice $device
 
-    #[ ! -d $rootdevice/usr/local ] && mkdir -p $rootdevice/usr/local
     persistent=$(blkid -t LABEL=COS_PERSISTENT -o device)
-    if [ -n "$persistent" ] && ! mount -n auto -o rw "$persistent" "$rootdevice/usr/local" ; then
-      echo "cant mount: $persistent"
-      shell
+    if [ -n "$persistent" ]; then
+      mount_root "$rootdevice/usr/local" $persistent
     fi
 
-    #[ ! -d $rootdevice/oem ] && mkdir -p $rootdevice/oem
     oem=$(blkid -t LABEL=COS_OEM -o device)
-    if [ -n "$oem" ] && ! mount -n auto -o rw "$oem" "$rootdevice/oem" ; then
-      echo "cant mount: $oem"
-      shell
+    if [ -n "$oem" ]; then
+      mount_root "$rootdevice/oem" $oem
     fi
 
   else
     search_overlay
   fi
-
 }
 
 switch_system() {

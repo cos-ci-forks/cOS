@@ -1,0 +1,33 @@
+stages:
+   initramfs.after:
+     - name: "Setup Luet config file"
+       directories: 
+       - path: "/etc/luet"
+         permissions: 0600
+         owner: 0
+         group: 0
+       files:
+       - path: /etc/luet/luet.yaml
+         content: |
+                  general:
+                     debug: false
+                  system:
+                    rootfs: /tmp/upgrade
+                    database_engine: "memory"
+                  repositories:
+                  - name: "cos"
+                    description: "cOS official"
+                    type: "docker"
+                    enable: true
+                    cached: true
+                    priority: 1
+                    urls:
+                    - "raccos/releases-amd64"
+         permissions: 0600
+         owner: 0
+         group: 0
+       - path: /etc/cos-upgrade-image
+         content: "system/cos"
+         permissions: 0600
+         owner: 0
+         group: 0

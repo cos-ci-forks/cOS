@@ -1,7 +1,7 @@
 packages:
   rootfs:
   - system/cos
-  - system/initramfs
+  - system/cloud-config
   # - system/cloud-config
   uefi:
   - live/systemd-boot

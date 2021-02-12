@@ -1,11 +1,9 @@
-# e2label <part> <newlabel>
-# tune2fs -L COS_ACTIVE $DEVICE
-
+#!/bin/bash
 
 # 1. Identify active/passive partition
 # 2. Install upgrade in passive partition
 # 3. Invert partition labels
-# 4. Update grub
+# 4. Update grub (?)
 # 5. Reboot if requested by user (?)
 
 find_partitions() {
@@ -17,6 +15,16 @@ find_partitions() {
     PASSIVE=$(blkid -L COS_PASSIVE)
     if [ -z "$ACTIVE" ]; then
         echo "Active partition cannot be found"
+        exit 1
+    fi
+    PERSISTENT=$(blkid -L COS_PERSISTENT)
+    if [ -z "$PERSISTENT" ]; then
+        echo "Persistent partition cannot be found"
+        exit 1
+    fi
+    OEM=$(blkid -L COS_OEM)
+    if [ -z "$OEM" ]; then
+        echo "OEM partition cannot be found"
         exit 1
     fi
 }
@@ -31,16 +39,32 @@ find_upgrade_channel() {
 }
 
 mount_image() {
-
-
+    TARGET=/tmp/upgrade
+    mkdir ${TARGET}
+    mount $PASSIVE ${TARGET}
+    mkdir -p ${TARGET}/oem
+    mount ${OEM} ${TARGET}/oem
+    mkdir -p ${TARGET}/usr/local
+    mount ${PERSISTENT} ${TARGET}/usr/local
 }
 
 upgrade() {
-    mkdir /tmp/upgrade
-    mount -t auto -o rw $PASSIVE /tmp/upgrade
+    mount -t auto $PASSIVE /tmp/upgrade
     luet install -y $UPGRADE_IMAGE
+    luet cleanup
+}
+
+switch_active() {
+    tune2fs -L COS_ACTIVE $PASSIVE
+    tune2fs -L COS_PASSIVE $ACTIVE
 }
 
 find_partitions
+
 find_upgrade_channel
 
+mount_image
+
+upgrade
+
+switch_active
