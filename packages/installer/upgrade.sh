@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 # 1. Identify active/passive partition
 # 2. Install upgrade in passive partition
 # 3. Invert partition labels
@@ -7,22 +7,22 @@
 # 5. Reboot if requested by user (?)
 
 find_partitions() {
-    ACTIVE=$(blkid -L COS_ACTIVE)
+    ACTIVE=$(blkid -L COS_ACTIVE || true)
     if [ -z "$ACTIVE" ]; then
         echo "Active partition cannot be found"
         exit 1
     fi
-    PASSIVE=$(blkid -L COS_PASSIVE)
+    PASSIVE=$(blkid -L COS_PASSIVE || true)
     if [ -z "$ACTIVE" ]; then
         echo "Active partition cannot be found"
         exit 1
     fi
-    PERSISTENT=$(blkid -L COS_PERSISTENT)
+    PERSISTENT=$(blkid -L COS_PERSISTENT || true)
     if [ -z "$PERSISTENT" ]; then
         echo "Persistent partition cannot be found"
         exit 1
     fi
-    OEM=$(blkid -L COS_OEM)
+    OEM=$(blkid -L COS_OEM || true)
     if [ -z "$OEM" ]; then
         echo "OEM partition cannot be found"
         exit 1
@@ -40,11 +40,11 @@ find_upgrade_channel() {
 
 mount_image() {
     TARGET=/tmp/upgrade
-    mkdir ${TARGET}
+    mkdir ${TARGET} || true
     mount $PASSIVE ${TARGET}
-    mkdir -p ${TARGET}/oem
+    mkdir -p ${TARGET}/oem || true
     mount ${OEM} ${TARGET}/oem
-    mkdir -p ${TARGET}/usr/local
+    mkdir -p ${TARGET}/usr/local || true
     mount ${PERSISTENT} ${TARGET}/usr/local
 }
 
