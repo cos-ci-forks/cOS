@@ -49,7 +49,7 @@ parse_cmdline() {
 	case "$root" in
 		/dev/* ) device=$root ;;
 		UUID=* ) eval $root; device="/dev/disk/by-uuid/$UUID"  ;;
-		LABEL=*) eval $root; device="$(blkid -t $root -o device)" ;;
+		LABEL=*) eval $root; device="/dev/disk/by-label/$LABEL" ;;
 	esac
 }
 
