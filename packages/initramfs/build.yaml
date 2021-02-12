@@ -35,6 +35,7 @@ steps:
 - find /lib/modules/**/kernel/drivers/virtio  -exec cp --parents {} ./modules \;
 - find /lib/modules/**/kernel/drivers/cdrom  -exec cp --parents {} ./modules \;
 - find /lib/modules/**/kernel/drivers/scsi  -exec cp --parents {} ./modules \;
+- find /lib/modules/**/kernel/drivers/md  -exec cp {} --parents ./modules \;
 
 # Ethernet + address family: af_packet
 - find /lib/modules/**/kernel/drivers/net/ethernet  -exec cp --parents {} ./modules \;

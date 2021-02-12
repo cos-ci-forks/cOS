@@ -1,6 +1,6 @@
 name: "cos"
 category: "system"
-version: "0.4.7"
+version: "0.4.8"
 
 packages: >-
       systemd
@@ -10,6 +10,7 @@ packages: >-
       e2fsprogs
       coreutils
       dosfstools
+      device-mapper
       grub2
       grub2-i386-pc
       grub2-x86_64-efi
