@@ -11,9 +11,9 @@ requires:
 - name: "vanilla"
   category: "kernel"
   version: ">=0"
-- name: "initramfs"
-  category: "system"
-  version: ">=0"
+# - name: "initramfs"
+#   category: "system"
+#   version: ">=0"
 - category: "system"
   name: "yip"
   version: ">=0"
@@ -124,4 +124,5 @@ excludes:
 - ^/usr/local/share
 - ^/usr/local/src
 - ^/root
-- ^/etc
+#- ^/etc
+- ^/etc/.+$

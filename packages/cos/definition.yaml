@@ -1,6 +1,6 @@
 name: "cos"
 category: "system"
-version: "0.4.0"
+version: "0.4.7"
 
 packages: >-
       systemd
@@ -16,3 +16,4 @@ packages: >-
       which
       curl
       iproute2
+      nano

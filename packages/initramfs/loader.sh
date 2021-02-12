@@ -20,7 +20,16 @@ prepare_workarea() {
   echo "Created folders for all critical file systems."
 }
 
+shell() {
+  # Set flag which indicates that we have obtained controlling terminal.
+  export PID1_SHELL=true
+
+  # Interactive shell with controlling tty as PID 1.
+  exec setsid sh
+}
+
 parse_cmdline() {
+  set -x
 	read -r cmdline < /proc/cmdline
 
 	for param in $cmdline ; do
@@ -40,17 +49,12 @@ parse_cmdline() {
 	case "$root" in
 		/dev/* ) device=$root ;;
 		UUID=* ) eval $root; device="/dev/disk/by-uuid/$UUID"  ;;
-		LABEL=*) eval $root; device="/dev/disk/by-label/$LABEL" ;;
+		LABEL=*) eval $root; device="$(blkid -t $root -o device)" ;;
 	esac
 }
 
 shell() {
 	setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
-}
-
-find_boot_device(){
-  # Grab device by label if we find it in blkid
-  device=$(blkid -t LABEL=COS_STATE -o device)
 }
 
 mount_root() {
@@ -63,6 +67,7 @@ mount_root() {
 		echo "cant mount: $device"
 		shell
 	fi
+
 }
 
 search_overlay() {
@@ -221,24 +226,39 @@ delay() {
 }
 
 mount_system() {
+  # Parse cmdline for root device if the system was installed already
+  parse_cmdline
+
+  rootdevice=/mnt
   if [ -n "$device" ]; then
-    # FIXME: Temporarly, until we separate COS_STATE from COS_PERSISTENCY (/usr/local)
+    # FIXME: Temporarly, until we separate COS_STATE from COS_PERSISTENT (/usr/local)
     rwopt="rw"
-    mount_root /mnt
+    mount_root $rootdevice
+
+    #[ ! -d $rootdevice/usr/local ] && mkdir -p $rootdevice/usr/local
+    persistent=$(blkid -t LABEL=COS_PERSISTENT -o device)
+    if [ -n "$persistent" ] && ! mount -n auto -o rw "$persistent" "$rootdevice/usr/local" ; then
+      echo "cant mount: $persistent"
+      shell
+    fi
+
+    #[ ! -d $rootdevice/oem ] && mkdir -p $rootdevice/oem
+    oem=$(blkid -t LABEL=COS_OEM -o device)
+    if [ -n "$oem" ] && ! mount -n auto -o rw "$oem" "$rootdevice/oem" ; then
+      echo "cant mount: $oem"
+      shell
+    fi
+
   else
     search_overlay
   fi
+
 }
 
 switch_system() {
   if [ ! -e "/mnt/sbin/init" ]; then
     echo -e "  \\e[31m/sbin/init in rootfs not found, dropping to emergency shell\\e[0m"
-
-    # Set flag which indicates that we have obtained controlling terminal.
-    export PID1_SHELL=true
-
-    # Interactive shell with controlling tty as PID 1.
-    exec setsid sh
+    shell
   fi
 
   # Move critical file systems to the new mountpoint.
@@ -267,12 +287,6 @@ prepare_workarea
 
 # Delay boot if rootdelay is provided in cmdline
 delay
-
-# Find boot device if a COS version is installed already
-find_boot_device
-
-# Parse cmdline for root device if the system was installed already
-parse_cmdline
 
 # Mount the new system, or search for a squashfs (LiveCD)
 mount_system
