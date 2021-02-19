@@ -19,3 +19,4 @@ packages: >-
       iproute2
       nano
       gawk
+      squashfs
