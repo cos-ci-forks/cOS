@@ -1,6 +1,6 @@
 name: "golang"
 category: "build"
-version: "1.15.6"
+version: "1.15.7"
 
 hidden: true # No need to make it installable for now
 
