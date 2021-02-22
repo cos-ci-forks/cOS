@@ -8,15 +8,12 @@ on:
     branches: [ master ]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - run: |
         git fetch --prune --unshallow
-
-    - name: setup-docker
-      uses: docker-practice/actions-setup-docker@0.0.1
 
     # We patch docker to use all the HD available in GH action free runners
     - name: Patch Docker Daemon data-root
