@@ -9,7 +9,7 @@ COMPRESSION?=zstd
 CLEAN?=false
 export TREE?=$(ROOT_DIR)/packages
 
-BUILD_ARGS?=--pull --no-spinner --only-target-package
+BUILD_ARGS?= --live-output --pull --no-spinner --only-target-package
 SUDO?=
 VALIDATE_OPTIONS?=-s
 ARCH?=amd64

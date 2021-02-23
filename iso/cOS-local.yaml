@@ -11,7 +11,7 @@ packages:
   - live/boot
 
 initramfs:
-  kernel_file: "vmlinuz-vanilla"
+  kernel_file: "vmlinuz"
   rootfs_file: "initrd"
 
 overlay: "true"
